@@ -133,7 +133,6 @@
       <div class="input-group"><label>اسم المستخدم</label><input type="text" id="auth-username"></div>
       <div class="input-group"><label>كلمة المرور</label><input type="password" id="auth-password"></div>
       
-      <!-- 🌟 الكابتشا (تم وضع الـ Site Key الخاص بك هنا) -->
       <div class="cf-turnstile" data-sitekey="0x4AAAAAAF6ZXVP-z0nB3NsO"></div>
 
       <button class="btn-primary" id="auth-submit-btn" onclick="handleAuth()" style="margin-top: 15px;">تسجيل الدخول</button>
@@ -172,7 +171,25 @@
         <div id="page-dashboard" class="page active">
           <div class="card">
             <h2><span><i class="fa-solid fa-rocket"></i> إطلاق مجموعة (2 رصيد)</span></h2>
-            <div class="input-group"><select id="region"><option value="me">الشرق الأوسط</option><option value="bd">بنغلاديش</option></select></div>
+            
+            <!-- 🌟 هنا التعديل: قائمة المناطق الجديدة -->
+            <div class="input-group">
+                <select id="region">
+                    <option value="me">الشرق الأوسط (Middle East)</option>
+                    <option value="bd">بنغلاديش (Bangladesh)</option>
+                    <option value="eu">أوروبا (Europe)</option>
+                    <option value="id">إندونيسيا (Indonesia)</option>
+                    <option value="na">أمريكا الشمالية (North America)</option>
+                    <option value="pk">باكستان (Pakistan)</option>
+                    <option value="ru">روسيا (Russia)</option>
+                    <option value="sg">سنغافورة (Singapore)</option>
+                    <option value="sa">أمريكا الجنوبية / إسبانية (South America)</option>
+                    <option value="th">تايلاند (Thailand)</option>
+                    <option value="us">الولايات المتحدة (United States)</option>
+                    <option value="vn">فيتنام (Vietnam)</option>
+                </select>
+            </div>
+            
             <div class="input-group"><input type="text" id="clanId" placeholder="Clan ID"></div>
             <button class="btn-primary" onclick="launchGroup()">إطلاق <i class="fa-solid fa-bolt"></i></button>
             <div id="launch-msg" class="msg"></div>
