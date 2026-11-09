@@ -155,7 +155,6 @@
           <li onclick="switchPage('page-wallet', this)"><i class="fa-solid fa-wallet"></i> شحن الرصيد</li>
           <li onclick="switchPage('page-redeem', this)"><i class="fa-solid fa-ticket"></i> القسائم (الكوبونات)</li>
           <li onclick="switchPage('page-requests', this); loadMyRequests();"><i class="fa-solid fa-list-check"></i> طلباتي</li>
-          <li onclick="switchPage('page-admin', this)" id="menu-admin" style="display:none; color: var(--primary-red);"><i class="fa-solid fa-shield-halved"></i> لوحة الأدمن</li>
           <li onclick="logout()" style="color: #ff6b6b;"><i class="fa-solid fa-right-from-bracket"></i> تسجيل الخروج</li>
         </ul>
       </div>
@@ -216,32 +215,6 @@
           <div class="card"><h2><span><i class="fa-solid fa-clock-rotate-left"></i> طلباتي</span></h2><div id="my-requests-list">لا توجد.</div></div>
         </div>
 
-        <div id="page-admin" class="page">
-          <div class="card" id="admin-login-box">
-            <h2><span><i class="fa-solid fa-lock"></i> دخول الأدمن</span></h2>
-            <div class="input-group"><input type="password" id="admin-pass" placeholder="الباسورد"></div>
-            <button class="btn-primary" onclick="verifyAdmin()">دخول</button>
-          </div>
-          <div id="admin-dashboard" style="display:none;">
-            <div class="card" style="background: rgba(251, 191, 36, 0.1); border-color: #fbbf24;">
-              <h3><i class="fa-solid fa-server"></i> رصيد API: <span id="admin-api-basic" style="color:#fff">0</span> أساسي | <span id="admin-api-premium" style="color:#fff">0</span> مميز</h3>
-            </div>
-            <div class="card">
-              <h2><span><i class="fa-solid fa-bullhorn"></i> إشعار للجميع</span></h2>
-              <div class="input-group"><input type="text" id="broadcast-msg" placeholder="الرسالة..."></div>
-              <button class="btn-primary" onclick="sendBroadcast()">إرسال</button>
-            </div>
-            <div class="card">
-              <h2><span><i class="fa-solid fa-money-bill-transfer"></i> طلبات الشحن</span></h2>
-              <table id="admin-reqs-table"><thead><tr><th>اليوزر</th><th>المبلغ</th><th>TXID</th><th>إجراء</th></tr></thead><tbody></tbody></table>
-            </div>
-            <div class="card">
-              <h2><span><i class="fa-solid fa-users-gear"></i> إدارة المستخدمين</span></h2>
-              <table id="admin-users-table"><thead><tr><th>اليوزر</th><th>الرصيد</th><th>إجراءات</th></tr></thead><tbody></tbody></table>
-            </div>
-          </div>
-        </div>
-
       </div>
     </div>
   </div>
@@ -262,7 +235,6 @@
   <script>
     const WORKER_URL = "https://ffglory-proxy.youssefff143356.workers.dev"; 
     let currentUser = localStorage.getItem("ff_user") || "";
-    let currentAdminPass = "";
     let isSignupMode = false;
 
     function switchAuthTab(mode) {
@@ -325,7 +297,6 @@
       document.getElementById('ui-username').innerText = username;
       document.getElementById('ui-avatar').innerText = username.charAt(0).toUpperCase();
       document.getElementById('ui-balance').innerText = balance;
-      document.getElementById('menu-admin').style.display = 'flex';
       loadGroups(); checkNotifications();
     }
 
@@ -422,23 +393,18 @@
       } catch (e) { showMsg('topup-msg', e.message); }
     }
 
-    // 🌟 تعديل دالة شراء القسيمة عشان تظهر النافذة المنبثقة
     async function buyCoupon() {
       const basic_credits = document.getElementById("buy-coupon-value").value;
       try {
         const data = await apiCall("/api/user/create-coupon", "POST", { username: currentUser, basic_credits: parseInt(basic_credits) });
         
-        // تحديث الرصيد
         document.getElementById("ui-balance").innerText = data.new_balance;
-        
-        // إظهار النافذة المنبثقة بالكود
         document.getElementById("generated-coupon-code").innerText = data.code;
         document.getElementById("coupon-modal").style.display = "flex";
 
       } catch (e) { showMsg('buy-coupon-msg', e.message); }
     }
 
-    // دالة نسخ الكود
     function copyCoupon() {
       const code = document.getElementById("generated-coupon-code").innerText;
       navigator.clipboard.writeText(code).then(() => {
@@ -448,10 +414,9 @@
       });
     }
 
-    // دالة إغلاق النافذة المنبثقة
     function closeCouponModal() {
       document.getElementById("coupon-modal").style.display = "none";
-      document.getElementById("buy-coupon-msg").className = "msg"; // مسح أي رسائل قديمة
+      document.getElementById("buy-coupon-msg").className = "msg";
     }
 
     async function redeemCoupon() {
@@ -495,78 +460,6 @@
         document.getElementById("notif-badge").style.display = 'none';
         localStorage.setItem("lastNotif", Date.now()); localStorage.removeItem("latestNotifMsg");
       } else alert("لا توجد إشعارات.");
-    }
-
-    function verifyAdmin() {
-      currentAdminPass = document.getElementById("admin-pass").value;
-      if(currentAdminPass === "010300") {
-        document.getElementById("admin-login-box").style.display = "none";
-        document.getElementById("admin-dashboard").style.display = "block";
-        loadAdminData();
-      } else alert("باسورد غلط");
-    }
-
-    async function loadAdminData() {
-      try {
-        const apiBal = await apiCall("/api/admin/api-balance", "POST", { adminPass: currentAdminPass });
-        document.getElementById("admin-api-basic").innerText = apiBal.basic;
-        document.getElementById("admin-api-premium").innerText = apiBal.premium;
-      } catch(e) {}
-
-      try {
-        const reqs = await apiCall("/api/admin/requests", "POST", { adminPass: currentAdminPass });
-        let reqHtml = "";
-        reqs.forEach(r => {
-          let actionBtn = r.status === 'pending' ? `<button class="btn-sm btn-green" onclick="approveReq('${r.id}')">موافقة</button>` : "تم";
-          reqHtml += `<tr><td>${r.username}</td><td>$${r.amount}</td><td>${r.txid}</td><td>${actionBtn}</td></tr>`;
-        });
-        document.querySelector("#admin-reqs-table tbody").innerHTML = reqHtml;
-      } catch(e) {}
-
-      try {
-        const users = await apiCall("/api/admin/users", "POST", { adminPass: currentAdminPass });
-        let userHtml = "";
-        users.forEach(u => {
-          let banBtn = u.isBanned ? `<button class="btn-sm btn-green" onclick="userAction('${u.username}', 'unban')">إلغاء الحظر</button>` : `<button class="btn-sm btn-red" onclick="userAction('${u.username}', 'ban')">حظر</button>`;
-          userHtml += `<tr><td>${u.username}</td><td>$${u.balance}</td>
-            <td>
-              <button class="btn-sm btn-green" onclick="promptAdd('${u.username}', 'add')">+</button>
-              <button class="btn-sm btn-red" onclick="promptAdd('${u.username}', 'deduct')">-</button>
-              ${banBtn}
-            </td></tr>`;
-        });
-        document.querySelector("#admin-users-table tbody").innerHTML = userHtml;
-      } catch(e) {}
-    }
-
-    async function approveReq(reqId) {
-      try {
-        await apiCall("/api/admin/approve-req", "POST", { adminPass: currentAdminPass, reqId });
-        alert("✅ تمت الموافقة وإضافة الرصيد للعميل!");
-        loadAdminData(); 
-      } catch(e) { alert("❌ حدث خطأ: " + e.message); }
-    }
-
-    async function userAction(user, action, amount = 0) {
-      try {
-        await apiCall("/api/admin/user-action", "POST", { adminPass: currentAdminPass, targetUser: user, action, amount });
-        loadAdminData();
-      } catch(e) { alert("❌ حدث خطأ: " + e.message); }
-    }
-
-    function promptAdd(user, action) {
-      let amount = prompt("أدخل المبلغ:");
-      if(amount && !isNaN(amount)) userAction(user, action, parseFloat(amount));
-    }
-
-    async function sendBroadcast() {
-      const msg = document.getElementById("broadcast-msg").value;
-      if(!msg) return;
-      try {
-        await apiCall("/api/admin/broadcast", "POST", { adminPass: currentAdminPass, message: msg });
-        alert("✅ تم إرسال الإشعار للجميع!");
-        document.getElementById("broadcast-msg").value = "";
-      } catch(e) { alert("❌ حدث خطأ: " + e.message); }
     }
 
     if(currentUser) {
