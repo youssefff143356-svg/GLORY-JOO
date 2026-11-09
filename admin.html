@@ -3,14 +3,14 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ADMIN PANEL - JOO SECURE</title>
+  <title>ADMIN PANEL - GLORY JOO</title>
   <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <style>
     :root { --bg-color: #0a0505; --card-bg: #140808; --primary-red: #e50914; --text-main: #f3f4f6; --text-muted: #9ca3af; --border-color: #331111; --glow: 0 0 15px rgba(229, 9, 20, 0.5); }
     * { box-sizing: border-box; font-family: 'Cairo', sans-serif; margin: 0; padding: 0; }
     body { background-color: var(--bg-color); color: var(--text-main); min-height: 100vh; padding: 20px; display: flex; justify-content: center; }
-    .container { max-width: 1000px; width: 100%; }
+    .container { max-width: 1200px; width: 100%; }
     
     .login-box { background: var(--card-bg); padding: 40px; border-radius: 20px; width: 100%; max-width: 400px; border: 1px solid var(--border-color); box-shadow: var(--glow); margin: 100px auto; text-align: center; }
     .login-box h1 { color: var(--primary-red); margin-bottom: 20px; }
@@ -22,40 +22,83 @@
     .top-bar { display: flex; justify-content: space-between; align-items: center; background: var(--card-bg); padding: 20px; border-radius: 20px; border: 1px solid var(--border-color); margin-bottom: 20px; }
     .top-bar h2 { color: var(--primary-red); }
     
+    /* كروت الإحصائيات */
+    .kpi-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin-bottom: 20px; }
+    .kpi-card { background: var(--card-bg); padding: 15px; border-radius: 15px; border: 1px solid var(--border-color); display: flex; align-items: center; gap: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
+    .kpi-icon { width: 50px; height: 50px; border-radius: 12px; background: rgba(229, 9, 20, 0.1); color: var(--primary-red); display: flex; justify-content: center; align-items: center; font-size: 1.5rem; }
+    .kpi-info h4 { font-size: 0.85rem; color: var(--text-muted); margin-bottom: 5px; }
+    .kpi-info span { font-size: 1.5rem; font-weight: bold; color: white; }
+    
     .card { background: var(--card-bg); border-radius: 20px; padding: 25px; border: 1px solid var(--border-color); margin-bottom: 20px; }
     .card h3 { font-size: 1.2rem; margin-bottom: 15px; color: #fbbf24; }
-    .api-balance-card { background: rgba(251, 191, 36, 0.1); border: 1px solid #fbbf24; padding: 15px; border-radius: 12px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; }
+
+    .search-box { width: 100%; padding: 12px; background: #0a0505; border: 1px solid var(--border-color); border-radius: 10px; color: white; font-family: 'Cairo'; margin-bottom: 15px; }
 
     table { width: 100%; border-collapse: collapse; margin-top: 10px; }
     th, td { padding: 12px; text-align: right; border-bottom: 1px solid var(--border-color); font-size: 0.9rem; }
     th { color: var(--text-muted); background: #0a0505; }
-    .btn-sm { padding: 8px 15px; border-radius: 8px; border: none; cursor: pointer; font-family: 'Cairo'; font-weight: 600; font-size: 0.8rem; transition: 0.3s;}
+    .btn-sm { padding: 6px 12px; border-radius: 8px; border: none; cursor: pointer; font-family: 'Cairo'; font-weight: 600; font-size: 0.8rem; transition: 0.3s; margin: 0 2px;}
     .btn-green { background: #22c55e; color: white; }
     .btn-red { background: var(--primary-red); color: white; }
+    .status-badge { padding: 4px 8px; border-radius: 6px; font-size: 0.75rem; font-weight: bold; }
+    .status-active { background: rgba(34, 197, 94, 0.2); color: #22c55e; }
+    .status-banned { background: rgba(229, 9, 20, 0.2); color: var(--primary-red); }
+
+    @media (max-width: 900px) { .kpi-grid { grid-template-columns: 1fr 1fr; } }
   </style>
 </head>
 <body>
   <div class="container">
     
-    <!-- شاشة الدخول -->
     <div class="login-box" id="loginBox">
       <h1><i class="fa-solid fa-lock"></i> ADMIN PANEL</h1>
       <div class="input-group"><input type="password" id="admin-pass" placeholder="أدخل باسورد الأدمن"></div>
       <button class="btn-primary" onclick="verifyAdmin()">دخول</button>
     </div>
 
-    <!-- لوحة التحكم -->
     <div id="dashboard">
       <div class="top-bar">
         <h2><i class="fa-solid fa-shield-halved"></i> لوحة تحكم الإدارة</h2>
-        <button class="btn-sm btn-red" onclick="window.location.reload()">تسجيل خروج</button>
+        <button class="btn-sm btn-red" onclick="window.location.reload()"><i class="fa-solid fa-right-from-bracket"></i> خروج</button>
       </div>
 
-      <div class="api-balance-card">
-        <h3><i class="fa-solid fa-server"></i> رصيد API للموقع الأصلي</h3>
-        <div><span id="admin-api-basic" style="color:#fff; font-weight:bold; font-size:1.2rem;">0</span> أساسي | <span id="admin-api-premium" style="color:#fff; font-weight:bold; font-size:1.2rem;">0</span> مميز</div>
+      <!-- KPIs -->
+      <div class="kpi-grid">
+        <div class="kpi-card">
+          <div class="kpi-icon"><i class="fa-solid fa-users"></i></div>
+          <div class="kpi-info"><h4>إجمالي المسجلين</h4><span id="kpi-users">0</span></div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-icon" style="background: rgba(34, 197, 94, 0.1); color: #22c55e;"><i class="fa-solid fa-wifi"></i></div>
+          <div class="kpi-info"><h4>المتصلين حالياً</h4><span id="kpi-online">0</span></div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-icon" style="background: rgba(156, 163, 175, 0.1); color: #9ca3af;"><i class="fa-solid fa-plug-circle-xmark"></i></div>
+          <div class="kpi-info"><h4>غير متصل</h4><span id="kpi-offline">0</span></div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-icon" style="background: rgba(251, 191, 36, 0.1); color: #fbbf24;"><i class="fa-solid fa-list-check"></i></div>
+          <div class="kpi-info"><h4>طلبات جديدة</h4><span id="kpi-pending">0</span></div>
+        </div>
       </div>
 
+      <!-- طلبات الشحن -->
+      <div class="card">
+        <h3><i class="fa-solid fa-money-bill-transfer"></i> طلبات الشحن</h3>
+        <table id="admin-reqs-table"><thead><tr><th>اليوزر</th><th>المبلغ</th><th>الطريقة</th><th>المرجع</th><th>الحالة</th><th>إجراء</th></tr></thead><tbody></tbody></table>
+      </div>
+
+      <!-- إدارة المستخدمين -->
+      <div class="card">
+        <h3><i class="fa-solid fa-users-gear"></i> إدارة المستخدمين</h3>
+        <input type="text" id="search-user" class="search-box" placeholder="🔍 ابحث عن مستخدم بالاسم..." onkeyup="searchUsers()">
+        <table id="admin-users-table">
+          <thead><tr><th>اليوزر</th><th>الرصيد</th><th>الحالة</th><th>آخر تواجد</th><th>إجراءات</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+
+      <!-- الإشعارات -->
       <div class="card">
         <h3><i class="fa-solid fa-bullhorn"></i> إرسال إشعار للجميع</h3>
         <div style="display:flex; gap:10px;">
@@ -63,23 +106,13 @@
           <button class="btn-primary" onclick="sendBroadcast()" style="width:150px;">إرسال</button>
         </div>
       </div>
-
-      <div class="card">
-        <h3><i class="fa-solid fa-money-bill-transfer"></i> طلبات الشحن</h3>
-        <table id="admin-reqs-table"><thead><tr><th>اليوزر</th><th>المبلغ</th><th>TXID</th><th>الحالة</th><th>إجراء</th></tr></thead><tbody></tbody></table>
-      </div>
-
-      <div class="card">
-        <h3><i class="fa-solid fa-users-gear"></i> إدارة المستخدمين</h3>
-        <table id="admin-users-table"><thead><tr><th>اليوزر</th><th>الرصيد</th><th>إجراءات</th></tr></thead><tbody></tbody></table>
-      </div>
     </div>
-
   </div>
 
   <script>
     const WORKER_URL = "https://ffglory-proxy.youssefff143356.workers.dev"; 
     let currentAdminPass = "";
+    let allUsers = []; // لتخزين المستخدمين للبحث فيهم
 
     async function apiCall(path, method = "GET", body = null) {
       const options = { method, headers: { "Content-Type": "application/json" } };
@@ -100,36 +133,76 @@
     }
 
     async function loadAdminData() {
+      // جلب الإحصائيات
       try {
-        const apiBal = await apiCall("/api/admin/api-balance", "POST", { adminPass: currentAdminPass });
-        document.getElementById("admin-api-basic").innerText = apiBal.basic;
-        document.getElementById("admin-api-premium").innerText = apiBal.premium;
+        const stats = await apiCall("/api/admin/stats", "POST", { adminPass: currentAdminPass });
+        document.getElementById("kpi-users").innerText = stats.totalUsers;
+        document.getElementById("kpi-online").innerText = stats.onlineUsers;
+        document.getElementById("kpi-offline").innerText = stats.offlineUsers;
+        document.getElementById("kpi-pending").innerText = stats.pendingReqs;
       } catch(e) { console.log(e); }
 
+      // جلب الطلبات
       try {
         const reqs = await apiCall("/api/admin/requests", "POST", { adminPass: currentAdminPass });
         let reqHtml = "";
         reqs.forEach(r => {
-          let actionBtn = r.status === 'pending' ? `<button class="btn-sm btn-green" onclick="approveReq('${r.id}')">موافقة</button>` : "تم";
-          reqHtml += `<tr><td>${r.username}</td><td>$${r.amount}</td><td>${r.txid}</td><td>${r.status}</td><td>${actionBtn}</td></tr>`;
+          let statusBadge = r.status === 'pending' ? '<span class="status-badge" style="background:rgba(251,191,36,0.2); color:#fbbf24;">قيد الانتظار</span>' : '<span class="status-badge status-active">تمت الموافقة</span>';
+          let actionBtn = r.status === 'pending' ? `<button class="btn-sm btn-green" onclick="approveReq('${r.id}')">موافقة</button>` : "-";
+          let methodName = r.method === 'vodafone' ? 'فودافون' : 'بايننس';
+          
+          reqHtml += `<tr>
+            <td>${r.username}</td>
+            <td style="color:#22c55e; font-weight:bold;">$${r.amount}</td>
+            <td>${methodName}</td>
+            <td style="font-size:0.8rem; color:var(--text-muted);">${r.txid}</td>
+            <td>${statusBadge}</td>
+            <td>${actionBtn}</td>
+          </tr>`;
         });
-        document.querySelector("#admin-reqs-table tbody").innerHTML = reqHtml || "<tr><td colspan='5' style='text-align:center;'>لا توجد طلبات</td></tr>";
+        document.querySelector("#admin-reqs-table tbody").innerHTML = reqHtml || "<tr><td colspan='6' style='text-align:center;'>لا توجد طلبات</td></tr>";
       } catch(e) { console.log(e); }
 
+      // جلب المستخدمين
       try {
-        const users = await apiCall("/api/admin/users", "POST", { adminPass: currentAdminPass });
-        let userHtml = "";
-        users.forEach(u => {
-          let banBtn = u.isBanned ? `<button class="btn-sm btn-green" onclick="userAction('${u.username}', 'unban')">إلغاء الحظر</button>` : `<button class="btn-sm btn-red" onclick="userAction('${u.username}', 'ban')">حظر</button>`;
-          userHtml += `<tr><td>${u.username}</td><td>$${u.balance}</td>
-            <td>
-              <button class="btn-sm btn-green" onclick="promptAdd('${u.username}', 'add')">+ رصيد</button>
-              <button class="btn-sm btn-red" onclick="promptAdd('${u.username}', 'deduct')">- رصيد</button>
-              ${banBtn}
-            </td></tr>`;
-        });
-        document.querySelector("#admin-users-table tbody").innerHTML = userHtml;
+        allUsers = await apiCall("/api/admin/users", "POST", { adminPass: currentAdminPass });
+        renderUsersTable(allUsers); // دالة عرض المستخدمين
       } catch(e) { console.log(e); }
+    }
+
+    // دالة عرض المستخدمين
+    function renderUsersTable(usersToRender) {
+      let userHtml = "";
+      usersToRender.forEach(u => {
+        let statusBadge = u.isBanned ? '<span class="status-badge status-banned">محظور</span>' : '<span class="status-badge status-active">نشط</span>';
+        let banBtn = u.isBanned ? `<button class="btn-sm btn-green" onclick="userAction('${u.username}', 'unban')">إلغاء الحظر</button>` : `<button class="btn-sm btn-red" onclick="userAction('${u.username}', 'ban')">حظر</button>`;
+        
+        let lastSeenStr = "غير متصل";
+        if (u.last_seen && (Date.now() - u.last_seen < 15 * 60 * 1000)) {
+            lastSeenStr = "<span style='color:#22c55e;'>متصل الآن</span>";
+        }
+
+        userHtml += `<tr>
+          <td><strong>${u.username}</strong></td>
+          <td style="color:#fbbf24; font-weight:bold;">${u.balance}</td>
+          <td>${statusBadge}</td>
+          <td style="font-size:0.8rem;">${lastSeenStr}</td>
+          <td>
+            <button class="btn-sm btn-green" onclick="promptAdd('${u.username}', 'add')">+</button>
+            <button class="btn-sm btn-red" onclick="promptAdd('${u.username}', 'deduct')">-</button>
+            ${banBtn}
+            <button class="btn-sm btn-red" onclick="deleteUser('${u.username}')" style="background:#7f1d1d;"><i class="fa-solid fa-trash"></i></button>
+          </td>
+        </tr>`;
+      });
+      document.querySelector("#admin-users-table tbody").innerHTML = userHtml || "<tr><td colspan='5' style='text-align:center;'>لا يوجد مستخدمين</td></tr>";
+    }
+
+    // دالة البحث
+    function searchUsers() {
+      const query = document.getElementById("search-user").value.toLowerCase();
+      const filtered = allUsers.filter(u => u.username.toLowerCase().includes(query));
+      renderUsersTable(filtered);
     }
 
     async function approveReq(reqId) {
@@ -150,6 +223,15 @@
     function promptAdd(user, action) {
       let amount = prompt("أدخل المبلغ:");
       if(amount && !isNaN(amount)) userAction(user, action, parseFloat(amount));
+    }
+
+    async function deleteUser(username) {
+      if(!confirm(`هل أنت متأكد من حذف المستخدم ${username} نهائياً؟`)) return;
+      try {
+        await apiCall("/api/admin/delete-user", "POST", { adminPass: currentAdminPass, targetUser: username });
+        alert("🗑️ تم حذف المستخدم بنجاح!");
+        loadAdminData();
+      } catch(e) { alert("❌ حدث خطأ: " + e.message); }
     }
 
     async function sendBroadcast() {
