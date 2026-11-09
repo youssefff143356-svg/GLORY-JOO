@@ -74,7 +74,6 @@
     .btn-red { background: var(--primary-red); color: white; }
     .btn-yellow { background: #fbbf24; color: black; }
     
-    /* --- تصميم كارت المجموعة الجديد --- */
     .group-card { background: #0a0505; border: 1px solid var(--border-color); border-radius: 15px; padding: 20px; margin-bottom: 20px; box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
     .group-header { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 1px dashed var(--border-color); padding-bottom: 15px; margin-bottom: 15px; }
     .group-title { display: flex; align-items: center; gap: 15px; }
@@ -92,13 +91,22 @@
     .stat-value { display: block; font-size: 1.3rem; font-weight: bold; color: white; }
     .glory-val { color: #fbbf24; font-size: 1.5rem; }
 
-    /* شريط التقدم */
     .progress-container { width: 100%; background-color: #1a0a0a; border-radius: 10px; margin-bottom: 15px; position: relative; height: 22px; overflow: hidden; border: 1px solid var(--border-color); }
     .progress-bar { height: 100%; background-color: #fbbf24; width: 0%; transition: width 0.5s ease; }
     .progress-text { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 0.75rem; font-weight: bold; color: black; display: flex; justify-content: space-between; width: 90%; }
 
     .group-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 15px; border-top: 1px dashed var(--border-color); padding-top: 15px;}
     .group-actions button { flex: 1; padding: 10px; display: flex; justify-content: center; align-items: center; gap: 8px; font-size: 0.9rem;}
+
+    /* --- تصميم النافذة المنبثقة (Popup) للكوبون --- */
+    .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 1000; justify-content: center; align-items: center; backdrop-filter: blur(5px); }
+    .modal-content { background: var(--card-bg); padding: 30px; border-radius: 20px; width: 90%; max-width: 400px; border: 1px solid var(--primary-red); box-shadow: var(--glow); text-align: center; animation: scaleIn 0.3s; }
+    @keyframes scaleIn { from { transform: scale(0.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+    .modal-content h3 { color: #22c55e; margin-bottom: 15px; font-size: 1.5rem; }
+    .modal-content p { color: var(--text-muted); margin-bottom: 20px; }
+    .coupon-code-box { background: #0a0505; border: 2px dashed #fbbf24; padding: 15px; border-radius: 10px; font-size: 1.8rem; font-weight: bold; color: #fbbf24; letter-spacing: 2px; margin-bottom: 20px; font-family: monospace; }
+    .modal-actions { display: flex; gap: 10px; }
+    .modal-actions button { flex: 1; padding: 12px; font-size: 1rem; border-radius: 10px; border: none; cursor: pointer; font-weight: bold; font-family: 'Cairo'; transition: 0.3s;}
 
     @media (max-width: 768px) {
       .main-container { flex-direction: column; }
@@ -169,7 +177,6 @@
           </div>
         </div>
 
-        <!-- باقي الصفحات (محفظة، قسائم، طلبات، أدمن) زي ما هي -->
         <div id="page-wallet" class="page">
           <div class="card">
             <h2><span><i class="fa-brands fa-bitcoin"></i> شحن الرصيد (Binance)</span></h2>
@@ -239,6 +246,19 @@
     </div>
   </div>
 
+  <!-- 🌟 النافذة المنبثقة (Popup) للكوبون -->
+  <div id="coupon-modal" class="modal-overlay">
+    <div class="modal-content">
+      <h3><i class="fa-solid fa-check-circle"></i> تم إنشاء القسيمة!</h3>
+      <p>قم بنسخ الكود والاحتفاظ به:</p>
+      <div class="coupon-code-box" id="generated-coupon-code">XXXX-XXXX-XXXX</div>
+      <div class="modal-actions">
+        <button class="btn-green" onclick="copyCoupon()"><i class="fa-solid fa-copy"></i> نسخ الكود</button>
+        <button class="btn-red" onclick="closeCouponModal()"><i class="fa-solid fa-xmark"></i> إغلاق</button>
+      </div>
+    </div>
+  </div>
+
   <script>
     const WORKER_URL = "https://ffglory-proxy.youssefff143356.workers.dev"; 
     let currentUser = localStorage.getItem("ff_user") || "";
@@ -270,7 +290,6 @@
       setTimeout(() => { el.className = "msg"; }, 5000);
     }
 
-    // دالة لحساب الدقائق من نص وقت التشغيل
     function calcUptimePercent(uptimeStr) {
         if (!uptimeStr) return 0;
         let minutes = 0;
@@ -278,8 +297,6 @@
         const mMatch = uptimeStr.match(/(\d+)m/);
         if (hMatch) minutes += parseInt(hMatch[1]) * 60;
         if (mMatch) minutes += parseInt(mMatch[1]);
-        
-        // الهدف 8 ساعات = 480 دقيقة
         let percent = Math.round((minutes / 480) * 100);
         return percent > 100 ? 100 : percent;
     }
@@ -333,38 +350,28 @@
       } catch (e) { showMsg('launch-msg', e.message); }
     }
 
-    // --- عرض المجموعات بشكل تفصيلي مع شريط التقدم ---
     async function loadGroups() {
       const el = document.getElementById("groups-list"); 
       el.innerHTML = "<i class='fa-solid fa-spinner fa-spin'></i> جاري التحميل...";
-      
       try {
         const groups = await apiCall("/api/client/my-groups");
         if(!groups || groups.length === 0) { el.innerHTML = "لا توجد مجموعات."; return; }
-        
         let html = "";
         for(let g of groups) {
           let statusClass = g.status.toLowerCase().includes("run") ? "status-running" : "status-stopped";
           let statusText = g.status.toLowerCase().includes("run") ? "شغالة" : "متوقفة";
-          
-          let clanName = g.clan_id;
-          let glory = "0";
-          let gamesPlayed = "0"; // متغير لعدد المباريات
+          let clanName = g.clan_id, glory = "0", gamesPlayed = "0";
 
-          // جلب اسم العشيرة والمجد
           try {
               const info = await apiCall("/api/client/group-action", "POST", { action: "get-clan-info", group_id: g.group_id });
               if(info && info.clan_name) clanName = info.clan_name;
-              
               const gl = await apiCall("/api/client/group-action", "POST", { action: "get-glory", group_id: g.group_id });
               if(gl) {
                   glory = gl.glory || gl.total_glory || "0";
-                  // لو الـ API بيرجع عدد المباريات في رد الجلوري بنجيبه
-                  gamesPlayed = gl.games || gl.matches || gl.matches_played || "0"; 
+                  gamesPlayed = gl.games || gl.matches || "0"; 
               }
           } catch(e) {}
 
-          // حساب النسبة المئوية
           let percent = calcUptimePercent(g.uptime);
 
           html += `
@@ -372,38 +379,19 @@
               <div class="group-header">
                 <div class="group-title">
                   <i class="fa-solid fa-shield-halved clan-logo"></i>
-                  <div>
-                    <h3>${clanName}</h3>
-                    <p>ID: ${g.clan_id} | المنطقة: ${g.region}</p>
-                  </div>
+                  <div><h3>${clanName}</h3><p>ID: ${g.clan_id} | المنطقة: ${g.region}</p></div>
                 </div>
                 <span class="group-status ${statusClass}">${statusText}</span>
               </div>
-              
               <div class="group-stats">
-                <div class="stat-item">
-                  <span class="stat-label">Glory (المجد)</span>
-                  <span class="stat-value glory-val">${glory}</span>
-                </div>
-                <div class="stat-item">
-                  <span class="stat-label">عدد المباريات</span>
-                  <span class="stat-value">${gamesPlayed}</span>
-                </div>
-                <div class="stat-item">
-                  <span class="stat-label">وقت التشغيل</span>
-                  <span class="stat-value">${g.uptime || '-'}</span>
-                </div>
+                <div class="stat-item"><span class="stat-label">Glory</span><span class="stat-value glory-val">${glory}</span></div>
+                <div class="stat-item"><span class="stat-label">المباريات</span><span class="stat-value">${gamesPlayed}</span></div>
+                <div class="stat-item"><span class="stat-label">وقت التشغيل</span><span class="stat-value">${g.uptime || '-'}</span></div>
               </div>
-
-              <!-- شريط التقدم الأصفر -->
               <div class="progress-container">
                 <div class="progress-bar" style="width: ${percent}%;"></div>
-                <div class="progress-text">
-                  <span>8h GOAL</span>
-                  <span>${percent}%</span>
-                </div>
+                <div class="progress-text"><span>8h GOAL</span><span>${percent}%</span></div>
               </div>
-
               <div class="group-actions">
                 <button class="btn-sm btn-green" onclick="groupAction('${g.group_id}', 'restart')"><i class="fa-solid fa-rotate"></i> إعادة تشغيل</button>
                 <button class="btn-sm btn-yellow" onclick="groupAction('${g.group_id}', 'stop')"><i class="fa-solid fa-stop"></i> إيقاف</button>
@@ -434,13 +422,36 @@
       } catch (e) { showMsg('topup-msg', e.message); }
     }
 
+    // 🌟 تعديل دالة شراء القسيمة عشان تظهر النافذة المنبثقة
     async function buyCoupon() {
       const basic_credits = document.getElementById("buy-coupon-value").value;
       try {
         const data = await apiCall("/api/user/create-coupon", "POST", { username: currentUser, basic_credits: parseInt(basic_credits) });
-        showMsg('buy-coupon-msg', `✅ تم الشراء! الكود: ${data.code}`, false);
+        
+        // تحديث الرصيد
         document.getElementById("ui-balance").innerText = data.new_balance;
+        
+        // إظهار النافذة المنبثقة بالكود
+        document.getElementById("generated-coupon-code").innerText = data.code;
+        document.getElementById("coupon-modal").style.display = "flex";
+
       } catch (e) { showMsg('buy-coupon-msg', e.message); }
+    }
+
+    // دالة نسخ الكود
+    function copyCoupon() {
+      const code = document.getElementById("generated-coupon-code").innerText;
+      navigator.clipboard.writeText(code).then(() => {
+        alert("✅ تم نسخ الكود بنجاح!");
+      }).catch(() => {
+        alert("❌ فشل النسخ، يرجى النسخ يدوياً.");
+      });
+    }
+
+    // دالة إغلاق النافذة المنبثقة
+    function closeCouponModal() {
+      document.getElementById("coupon-modal").style.display = "none";
+      document.getElementById("buy-coupon-msg").className = "msg"; // مسح أي رسائل قديمة
     }
 
     async function redeemCoupon() {
