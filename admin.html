@@ -140,8 +140,21 @@
         const reqs = await apiCall("/api/admin/requests", "POST", { adminPass: currentAdminPass });
         let reqHtml = "";
         reqs.forEach(r => {
-          let statusBadge = r.status === 'pending' ? '<span class="status-badge" style="background:rgba(251,191,36,0.2); color:#fbbf24;">قيد الانتظار</span>' : '<span class="status-badge status-active">تمت الموافقة</span>';
-          let actionBtn = r.status === 'pending' ? `<button class="btn-sm btn-green" onclick="approveReq('${r.id}')">موافقة</button>` : "-";
+          let statusBadge = '';
+          let actionBtn = '';
+
+          if (r.status === 'pending') {
+             statusBadge = '<span class="status-badge" style="background:rgba(251,191,36,0.2); color:#fbbf24;">قيد الانتظار</span>';
+             actionBtn = `<button class="btn-sm btn-green" onclick="approveReq('${r.id}')">موافقة</button>
+                          <button class="btn-sm btn-red" onclick="rejectReq('${r.id}')">إلغاء</button>`;
+          } else if (r.status === 'approved') {
+             statusBadge = '<span class="status-badge status-active">تمت الموافقة</span>';
+             actionBtn = "-";
+          } else {
+             statusBadge = '<span class="status-badge" style="background:#444; color:#aaa;">ملغي</span>';
+             actionBtn = "-";
+          }
+
           let methodName = r.method === 'vodafone' ? 'فودافون' : 'بايننس';
           
           reqHtml += `<tr>
@@ -199,6 +212,16 @@
       try {
         await apiCall("/api/admin/approve-req", "POST", { adminPass: currentAdminPass, reqId });
         alert("✅ تمت الموافقة وإضافة الرصيد للعميل!");
+        loadAdminData(); 
+      } catch(e) { alert("❌ حدث خطأ: " + e.message); }
+    }
+
+    // 🌟 دالة إلغاء الطلب الجديدة
+    async function rejectReq(reqId) {
+      if(!confirm("هل أنت متأكد من إلغاء هذا الطلب؟")) return;
+      try {
+        await apiCall("/api/admin/reject-req", "POST", { adminPass: currentAdminPass, reqId });
+        alert("✅ تم إلغاء الطلب بنجاح!");
         loadAdminData(); 
       } catch(e) { alert("❌ حدث خطأ: " + e.message); }
     }
