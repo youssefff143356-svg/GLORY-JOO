@@ -22,6 +22,12 @@
     .top-bar { display: flex; justify-content: space-between; align-items: center; background: var(--card-bg); padding: 20px; border-radius: 20px; border: 1px solid var(--border-color); margin-bottom: 20px; }
     .top-bar h2 { color: var(--primary-red); }
     
+    /* كارت رصيد API */
+    .api-balance-card { background: rgba(251, 191, 36, 0.1); border: 1px solid #fbbf24; padding: 15px 25px; border-radius: 15px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
+    .api-balance-card h3 { color: #fbbf24; font-size: 1.1rem; display: flex; align-items: center; gap: 10px; }
+    .api-balance-card span { font-size: 1.3rem; }
+
+    /* كروت الإحصائيات */
     .kpi-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin-bottom: 20px; }
     .kpi-card { background: var(--card-bg); padding: 15px; border-radius: 15px; border: 1px solid var(--border-color); display: flex; align-items: center; gap: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
     .kpi-icon { width: 50px; height: 50px; border-radius: 12px; background: rgba(229, 9, 20, 0.1); color: var(--primary-red); display: flex; justify-content: center; align-items: center; font-size: 1.5rem; }
@@ -43,7 +49,7 @@
     .status-active { background: rgba(34, 197, 94, 0.2); color: #22c55e; }
     .status-banned { background: rgba(229, 9, 20, 0.2); color: var(--primary-red); }
 
-    @media (max-width: 900px) { .kpi-grid { grid-template-columns: 1fr 1fr; } }
+    @media (max-width: 900px) { .kpi-grid { grid-template-columns: 1fr 1fr; } .api-balance-card { flex-direction: column; gap: 10px; text-align: center; } }
   </style>
 </head>
 <body>
@@ -59,6 +65,15 @@
       <div class="top-bar">
         <h2><i class="fa-solid fa-shield-halved"></i> لوحة تحكم الإدارة</h2>
         <button class="btn-sm btn-red" onclick="window.location.reload()"><i class="fa-solid fa-right-from-bracket"></i> خروج</button>
+      </div>
+
+      <!-- 🌟 كارت رصيد الموقع الأصلي (API) رجع تاني هنا -->
+      <div class="api-balance-card">
+        <h3><i class="fa-solid fa-server"></i> رصيد الموقع الأصلي (API)</h3>
+        <div>
+          <span id="admin-api-basic" style="color:#fff; font-weight:bold;">0</span> أساسي | 
+          <span id="admin-api-premium" style="color:#fff; font-weight:bold;">0</span> مميز
+        </div>
       </div>
 
       <div class="kpi-grid">
@@ -128,6 +143,14 @@
     }
 
     async function loadAdminData() {
+      // 🌟 جلب رصيد الـ API (اللي ضفناه دلوقتي)
+      try {
+        const apiBal = await apiCall("/api/admin/api-balance", "POST", { adminPass: currentAdminPass });
+        document.getElementById("admin-api-basic").innerText = apiBal.basic;
+        document.getElementById("admin-api-premium").innerText = apiBal.premium;
+      } catch(e) { console.log("API Balance Error:", e); }
+
+      // جلب الإحصائيات
       try {
         const stats = await apiCall("/api/admin/stats", "POST", { adminPass: currentAdminPass });
         document.getElementById("kpi-users").innerText = stats.totalUsers;
@@ -136,6 +159,7 @@
         document.getElementById("kpi-pending").innerText = stats.pendingReqs;
       } catch(e) { console.log(e); }
 
+      // جلب الطلبات
       try {
         const reqs = await apiCall("/api/admin/requests", "POST", { adminPass: currentAdminPass });
         let reqHtml = "";
@@ -169,6 +193,7 @@
         document.querySelector("#admin-reqs-table tbody").innerHTML = reqHtml || "<tr><td colspan='6' style='text-align:center;'>لا توجد طلبات</td></tr>";
       } catch(e) { console.log(e); }
 
+      // جلب المستخدمين
       try {
         allUsers = await apiCall("/api/admin/users", "POST", { adminPass: currentAdminPass });
         renderUsersTable(allUsers); 
@@ -216,7 +241,6 @@
       } catch(e) { alert("❌ حدث خطأ: " + e.message); }
     }
 
-    // 🌟 دالة إلغاء الطلب الجديدة
     async function rejectReq(reqId) {
       if(!confirm("هل أنت متأكد من إلغاء هذا الطلب؟")) return;
       try {
