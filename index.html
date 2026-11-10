@@ -233,7 +233,6 @@
 
             <div class="input-group"><label>المبلغ المطلوب (بالدولار)</label><input type="number" id="topup-amount" placeholder="مثال: 5"></div>
             
-            <!-- 🌟 تعديل حقل الرقم المرجعي -->
             <div class="input-group">
               <label>الرقم المرجعي للعملية</label>
               <input type="text" id="topup-txid" placeholder="أدخل الرقم المرجعي" maxlength="18" oninput="this.value = this.value.replace(/[^0-9]/g, '')">
@@ -375,9 +374,18 @@
       document.getElementById('ui-avatar').innerText = username.charAt(0).toUpperCase();
       document.getElementById('ui-balance').innerText = balance;
       loadGroups(); checkNotifications();
+
+      // 🌟 تشغيل الفحص التلقائي للإشعارات كل 15 ثانية
+      if(!window.notifInterval) {
+          window.notifInterval = setInterval(checkNotifications, 15000);
+      }
     }
 
-    function logout() { localStorage.removeItem("ff_user"); location.reload(); }
+    function logout() { 
+      localStorage.removeItem("ff_user"); 
+      if(window.notifInterval) clearInterval(window.notifInterval);
+      location.reload(); 
+    }
 
     function switchPage(pageId, el) {
       document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
@@ -485,7 +493,6 @@
       } catch(e) { alert("❌ حدث خطأ: " + e.message); }
     }
 
-    // 🌟 تعديل دالة تغيير طريقة الدفع
     function setPayMethod(method) {
       payMethod = method;
       const txidInput = document.getElementById('topup-txid');
@@ -500,7 +507,7 @@
         txidInput.maxLength = 12;
         txidInput.placeholder = "أدخل رقم العملية (12 رقم كحد أقصى)";
       }
-      txidInput.value = ""; // تفريغ الخانة عند التبديل
+      txidInput.value = "";
     }
 
     async function requestTopup() {
@@ -508,8 +515,6 @@
       const txid = document.getElementById("topup-txid").value.trim();
       
       if(!amount || !txid) return showMsg('topup-msg', "أدخل البيانات");
-      
-      // 🌟 التحقق من الأرقام فقط
       if (!/^\d+$/.test(txid)) return showMsg('topup-msg', "الرقم المرجعي يجب أن يكون أرقاماً فقط");
       
       if (payMethod === 'binance' && txid.length > 18) return showMsg('topup-msg', "رقم عملية بينانس يجب أن لا يزيد عن 18 رقم");
@@ -593,6 +598,7 @@
           if(data.date > lastRead) {
              document.getElementById("notif-badge").style.display = 'flex';
              localStorage.setItem("latestNotifMsg", data.msg);
+             localStorage.setItem("latestNotifDate", data.date); // حفظ التاريخ اللي جاي من السيرفر
           }
         }
       } catch(e) {}
@@ -603,8 +609,11 @@
       if(msg) {
         alert("📢 إشعار:\n" + msg);
         document.getElementById("notif-badge").style.display = 'none';
-        localStorage.setItem("lastNotif", Date.now()); 
+        // بنخلي lastNotif = التاريخ اللي جاي من السيرفر مش من جهاز العميل
+        let notifDate = localStorage.getItem("latestNotifDate") || Date.now();
+        localStorage.setItem("lastNotif", notifDate); 
         localStorage.removeItem("latestNotifMsg");
+        localStorage.removeItem("latestNotifDate");
       } else alert("لا توجد إشعارات.");
     }
 
