@@ -388,7 +388,10 @@
 
           try {
               const info = await apiCall("/api/client/group-action", "POST", { action: "get-clan-info", group_id: g.group_id });
-              if(info && info.clan_name) clanName = info.clan_name;
+              // 🌟 هنا التعديل: بنحاول نجيب الاسم من كل الأماكن المحتملة
+              if(info) {
+                  clanName = info.clan_name || info.name || info.clanName || info.data?.clan_name || info.data?.name || g.clan_id;
+              }
               const gl = await apiCall("/api/client/group-action", "POST", { action: "get-glory", group_id: g.group_id });
               if(gl) {
                   glory = gl.glory || gl.total_glory || "0";
