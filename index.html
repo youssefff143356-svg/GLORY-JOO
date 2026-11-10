@@ -232,7 +232,12 @@
             </div>
 
             <div class="input-group"><label>المبلغ المطلوب (بالدولار)</label><input type="number" id="topup-amount" placeholder="مثال: 5"></div>
-            <div class="input-group"><label>الرقم المرجعي للعملية</label><input type="text" id="topup-txid" placeholder="أدخل الرقم المرجعي"></div>
+            
+            <!-- 🌟 تعديل حقل الرقم المرجعي -->
+            <div class="input-group">
+              <label>الرقم المرجعي للعملية</label>
+              <input type="text" id="topup-txid" placeholder="أدخل الرقم المرجعي" maxlength="18" oninput="this.value = this.value.replace(/[^0-9]/g, '')">
+            </div>
             
             <button class="btn-primary" onclick="requestTopup()" style="background: #fbbf24; color: #000;">إرسال الطلب</button>
             <div id="topup-msg" class="msg"></div>
@@ -480,24 +485,41 @@
       } catch(e) { alert("❌ حدث خطأ: " + e.message); }
     }
 
+    // 🌟 تعديل دالة تغيير طريقة الدفع
     function setPayMethod(method) {
       payMethod = method;
+      const txidInput = document.getElementById('topup-txid');
       if(method === 'binance') {
         document.getElementById('pay-binance').style.display = 'block';
         document.getElementById('pay-vodafone').style.display = 'none';
+        txidInput.maxLength = 18;
+        txidInput.placeholder = "أدخل رقم العملية (18 رقم كحد أقصى)";
       } else {
         document.getElementById('pay-binance').style.display = 'none';
         document.getElementById('pay-vodafone').style.display = 'block';
+        txidInput.maxLength = 12;
+        txidInput.placeholder = "أدخل رقم العملية (12 رقم كحد أقصى)";
       }
+      txidInput.value = ""; // تفريغ الخانة عند التبديل
     }
 
     async function requestTopup() {
       const amount = document.getElementById("topup-amount").value;
-      const txid = document.getElementById("topup-txid").value;
+      const txid = document.getElementById("topup-txid").value.trim();
+      
       if(!amount || !txid) return showMsg('topup-msg', "أدخل البيانات");
+      
+      // 🌟 التحقق من الأرقام فقط
+      if (!/^\d+$/.test(txid)) return showMsg('topup-msg', "الرقم المرجعي يجب أن يكون أرقاماً فقط");
+      
+      if (payMethod === 'binance' && txid.length > 18) return showMsg('topup-msg', "رقم عملية بينانس يجب أن لا يزيد عن 18 رقم");
+      if (payMethod === 'vodafone' && txid.length > 12) return showMsg('topup-msg', "رقم عملية فودافون يجب أن لا يزيد عن 12 رقم");
+
       try {
         await apiCall("/api/user/request-topup", "POST", { username: currentUser, amount, txid, method: payMethod });
         showMsg('topup-msg', "✅ تم الإرسال.", false);
+        document.getElementById("topup-amount").value = "";
+        document.getElementById("topup-txid").value = "";
       } catch (e) { showMsg('topup-msg', e.message); }
     }
 
@@ -581,7 +603,6 @@
       if(msg) {
         alert("📢 إشعار:\n" + msg);
         document.getElementById("notif-badge").style.display = 'none';
-        // 🌟 هنا التعديل (كان فيه غلطة مطبعية)
         localStorage.setItem("lastNotif", Date.now()); 
         localStorage.removeItem("latestNotifMsg");
       } else alert("لا توجد إشعارات.");
