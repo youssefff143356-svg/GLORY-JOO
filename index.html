@@ -103,6 +103,7 @@
     .group-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 15px; border-top: 1px dashed var(--border-color); padding-top: 15px;}
     .group-actions button { padding: 12px; display: flex; justify-content: center; align-items: center; gap: 8px; font-size: 0.9rem; width: 100%;}
 
+    /* 🌟 تنسيق النوافذ المنبثقة */
     .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 1000; justify-content: center; align-items: center; backdrop-filter: blur(5px); }
     .modal-content { background: var(--card-bg); padding: 30px; border-radius: 20px; width: 90%; max-width: 400px; border: 1px solid var(--primary-red); box-shadow: var(--glow); text-align: center; animation: scaleIn 0.3s; }
     @keyframes scaleIn { from { transform: scale(0.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }
@@ -111,6 +112,10 @@
     .coupon-code-box { background: #0a0505; border: 2px dashed #fbbf24; padding: 15px; border-radius: 10px; font-size: 1.8rem; font-weight: bold; color: #fbbf24; letter-spacing: 2px; margin-bottom: 20px; font-family: monospace; }
     .modal-actions { display: flex; gap: 10px; }
     .modal-actions button { flex: 1; padding: 12px; font-size: 1rem; border-radius: 10px; border: none; cursor: pointer; font-weight: bold; font-family: 'Cairo'; transition: 0.3s;}
+
+    /* 🌟 تنسيق خاص لنافذة الإشعارات */
+    .notif-msg-box { background: #0a0505; border: 1px solid var(--border-color); padding: 20px; border-radius: 10px; font-size: 1.1rem; color: white; margin-bottom: 20px; text-align: right; line-height: 1.6; }
+    .btn-mark-read { background: #3b82f6; color: white; }
 
     @media (max-width: 768px) {
       .main-container { flex-direction: column; }
@@ -288,6 +293,7 @@
     </div>
   </div>
 
+  <!-- نافذة الكوبون -->
   <div id="coupon-modal" class="modal-overlay">
     <div class="modal-content">
       <h3><i class="fa-solid fa-check-circle"></i> تم إنشاء القسيمة!</h3>
@@ -296,6 +302,18 @@
       <div class="modal-actions">
         <button class="btn-green" onclick="copyCoupon()"><i class="fa-solid fa-copy"></i> نسخ الكود</button>
         <button class="btn-red" onclick="closeCouponModal()"><i class="fa-solid fa-xmark"></i> إغلاق</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 🌟 نافذة الإشعارات الجديدة -->
+  <div id="notif-modal" class="modal-overlay">
+    <div class="modal-content">
+      <h3 style="color: #fbbf24;"><i class="fa-solid fa-bullhorn"></i> إشعار من الإدارة</h3>
+      <div class="notif-msg-box" id="notif-modal-text"></div>
+      <div class="modal-actions">
+        <button class="btn-mark-read" onclick="markNotifAsRead()"><i class="fa-solid fa-check-double"></i> تمييز كمقروء</button>
+        <button class="btn-red" onclick="closeNotifModal()"><i class="fa-solid fa-xmark"></i> إغلاق</button>
       </div>
     </div>
   </div>
@@ -581,33 +599,53 @@
       } catch(e) { list.innerHTML = "خطأ"; }
     }
 
-    // 🌟 إصلاح دالة الإشعارات عشان تشتغل مع الريفريش 100%
+    // 🌟 دالة جلب الإشعارات الجديدة
     async function checkNotifications() {
       try {
         const data = await apiCall("/api/notifications");
         if(data && data.msg) {
-          let lastRead = parseInt(localStorage.getItem("lastNotif") || "0");
-          // لو تاريخ الرسالة أحدث من تاريخ آخر قراءة
-          if(data.date > lastRead) {
+          // بنجيب التواريخ اللي العميل قراها ووافق عليها
+          let readDates = JSON.parse(localStorage.getItem("readNotifDates") || "[]");
+          
+          // لو التاريخ بتاع الرسالة دي لسه مش متسجل في المقروء
+          if(!readDates.includes(data.date)) {
              document.getElementById("notif-badge").style.display = 'flex';
-             localStorage.setItem("latestNotifMsg", data.msg);
-             localStorage.setItem("latestNotifDate", data.date);
+             localStorage.setItem("currentNotifMsg", data.msg);
+             localStorage.setItem("currentNotifDate", data.date);
           }
         }
       } catch(e) { console.log("خطأ في جلب الإشعارات:", e); }
     }
 
+    // 🌟 دالة عرض الإشعار
     function showNotification() {
-      let msg = localStorage.getItem("latestNotifMsg");
-      if(msg) {
-        alert("📢 إشعار من الإدارة:\n\n" + msg);
-        document.getElementById("notif-badge").style.display = 'none';
-        // بنسجل التاريخ اللي جاي من السيرفر عشان نعرف إننا قريناها
-        let notifDate = localStorage.getItem("latestNotifDate");
-        if(notifDate) localStorage.setItem("lastNotif", notifDate);
+      let msg = localStorage.getItem("currentNotifMsg");
+      let date = localStorage.getItem("currentNotifDate");
+      
+      if(msg && date) {
+        document.getElementById("notif-modal-text").innerText = msg;
+        document.getElementById("notif-modal").style.display = "flex";
       } else {
-        alert("لا توجد إشعارات جديدة.");
+        alert("لا توجد إشعارات جديدة حالياً.");
       }
+    }
+
+    // 🌟 دالة تمييز الإشعار كمقروء
+    function markNotifAsRead() {
+        let date = localStorage.getItem("currentNotifDate");
+        if(date) {
+            let readDates = JSON.parse(localStorage.getItem("readNotifDates") || "[]");
+            if(!readDates.includes(date)) {
+                readDates.push(date);
+                localStorage.setItem("readNotifDates", JSON.stringify(readDates));
+            }
+        }
+        document.getElementById("notif-badge").style.display = 'none';
+        closeNotifModal();
+    }
+
+    function closeNotifModal() {
+        document.getElementById("notif-modal").style.display = "none";
     }
 
     if(currentUser) {
