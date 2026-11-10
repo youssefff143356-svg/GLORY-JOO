@@ -31,6 +31,8 @@
 
     .btn-primary { width: 100%; padding: 15px; background: var(--primary-red); color: white; border: none; border-radius: 10px; font-size: 1.1rem; font-weight: 700; cursor: pointer; transition: 0.3s; box-shadow: var(--glow); }
     .btn-primary:hover { background: var(--primary-red-hover); transform: translateY(-2px); }
+    .btn-primary:disabled { background: #555; cursor: not-allowed; transform: none; box-shadow: none; }
+    
     .msg { margin-top: 15px; padding: 12px; border-radius: 8px; text-align: center; font-weight: bold; display: none; font-size: 0.9rem; }
     .msg.error { background: rgba(229, 9, 20, 0.1); border: 1px solid var(--primary-red); color: #ff6b6b; display: block; }
     .msg.success { background: rgba(34, 197, 94, 0.1); border: 1px solid #22c55e; color: #4ade80; display: block; }
@@ -162,6 +164,8 @@
           <li onclick="switchPage('page-wallet', this)"><i class="fa-solid fa-wallet"></i> شحن الرصيد</li>
           <li onclick="switchPage('page-redeem', this)"><i class="fa-solid fa-ticket"></i> القسائم (الكوبونات)</li>
           <li onclick="switchPage('page-requests', this); loadMyRequests();"><i class="fa-solid fa-list-check"></i> طلباتي</li>
+          <!-- 🌟 زرار حسابي الجديد -->
+          <li onclick="switchPage('page-account', this)"><i class="fa-solid fa-user-shield"></i> حسابي</li>
           <li onclick="logout()" style="color: #ff6b6b;"><i class="fa-solid fa-right-from-bracket"></i> تسجيل الخروج</li>
         </ul>
       </div>
@@ -190,7 +194,8 @@
             </div>
             
             <div class="input-group"><input type="text" id="clanId" placeholder="Clan ID"></div>
-            <button class="btn-primary" onclick="launchGroup()">إطلاق <i class="fa-solid fa-bolt"></i></button>
+            
+            <button class="btn-primary" id="btn-launch" onclick="launchGroup()">إطلاق <i class="fa-solid fa-bolt"></i></button>
             <div id="launch-msg" class="msg"></div>
           </div>
 
@@ -223,7 +228,6 @@
               </div>
             </div>
 
-            <!-- 🌟 السطر اللي إنت طلبته -->
             <div style="background: rgba(251, 191, 36, 0.1); border: 1px solid #fbbf24; color: #fbbf24; padding: 12px; border-radius: 10px; margin-bottom: 15px; text-align: center; font-weight: bold; font-size: 0.95rem;">
                 💡 سعر الشحن: 2 دولار = 1 رصيد
             </div>
@@ -259,6 +263,23 @@
 
         <div id="page-requests" class="page">
           <div class="card"><h2><span><i class="fa-solid fa-clock-rotate-left"></i> طلباتي</span></h2><div id="my-requests-list">لا توجد.</div></div>
+        </div>
+
+        <!-- 🌟 صفحة حسابي الجديدة -->
+        <div id="page-account" class="page">
+          <div class="card">
+            <h2><span><i class="fa-solid fa-key"></i> تغيير كلمة المرور</span></h2>
+            <div class="input-group">
+              <label>كلمة المرور الحالية</label>
+              <input type="password" id="old-pass" placeholder="أدخل كلمة المرور الحالية">
+            </div>
+            <div class="input-group">
+              <label>كلمة المرور الجديدة</label>
+              <input type="password" id="new-pass" placeholder="أدخل كلمة المرور الجديدة (6 أحرف على الأقل)">
+            </div>
+            <button class="btn-primary" onclick="changePassword()">تغيير كلمة المرور</button>
+            <div id="pass-msg" class="msg"></div>
+          </div>
         </div>
 
       </div>
@@ -363,15 +384,28 @@
     }
 
     async function launchGroup() {
-      const region = document.getElementById("region").value, clanId = document.getElementById("clanId").value;
+      const btn = document.getElementById("btn-launch");
+      const region = document.getElementById("region").value;
+      const clanId = document.getElementById("clanId").value;
+      
       if(!clanId) return showMsg('launch-msg', "أدخل Clan ID");
+
+      btn.disabled = true;
+      btn.innerHTML = "<i class='fa-solid fa-spinner fa-spin'></i> جاري الإطلاق...";
+      document.getElementById('launch-msg').className = "msg";
+
       try {
         const data = await apiCall("/api/client/auto-clan-group", "POST", { username: currentUser, region, clan_id: clanId });
         showMsg('launch-msg', "✅ تم الإطلاق! وتم خصم 2 رصيد.", false);
         document.getElementById("ui-balance").innerText = data.new_balance;
         document.getElementById("clanId").value = "";
         loadGroups(); 
-      } catch (e) { showMsg('launch-msg', e.message); }
+      } catch (e) { 
+        showMsg('launch-msg', e.message); 
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = "إطلاق <i class='fa-solid fa-bolt'></i>";
+      }
     }
 
     async function loadGroups() {
@@ -384,13 +418,15 @@
         for(let g of groups) {
           let statusClass = g.status.toLowerCase().includes("run") ? "status-running" : "status-stopped";
           let statusText = g.status.toLowerCase().includes("run") ? "شغالة" : "متوقفة";
-          let clanName = g.clan_id, glory = "0", gamesPlayed = "0";
+          
+          // التعديل هنا: بنحاول نجيب الاسم من كل الأماكن المحتملة
+          let clanName = g.clan_id;
+          let glory = "0", gamesPlayed = "0";
 
           try {
               const info = await apiCall("/api/client/group-action", "POST", { action: "get-clan-info", group_id: g.group_id });
-              // 🌟 هنا التعديل: بنحاول نجيب الاسم من كل الأماكن المحتملة
               if(info) {
-                  clanName = info.clan_name || info.name || info.clanName || info.data?.clan_name || info.data?.name || g.clan_id;
+                  clanName = info.clan_name || info.name || info.clanName || info.data?.clan_name || info.data?.name || info.clan?.name || g.clan_id;
               }
               const gl = await apiCall("/api/client/group-action", "POST", { action: "get-glory", group_id: g.group_id });
               if(gl) {
@@ -406,7 +442,10 @@
               <div class="group-header">
                 <div class="group-title">
                   <i class="fa-solid fa-shield-halved clan-logo"></i>
-                  <div><h3>${clanName}</h3><p>ID: ${g.clan_id} | المنطقة: ${g.region}</p></div>
+                  <div>
+                    <h3>${clanName}</h3>
+                    <p>ID: ${g.clan_id} | المنطقة: ${g.region}</p>
+                  </div>
                 </div>
                 <span class="group-status ${statusClass}">${statusText}</span>
               </div>
@@ -498,6 +537,21 @@
         document.getElementById("ui-balance").innerText = data.new_balance;
         document.getElementById("coupon-code").value = "";
       } catch (e) { showMsg('redeem-msg', e.message); }
+    }
+
+    // 🌟 دالة تغيير كلمة المرور الجديدة
+    async function changePassword() {
+      const oldP = document.getElementById("old-pass").value;
+      const newP = document.getElementById("new-pass").value;
+      if(!oldP || !newP) return showMsg('pass-msg', "يرجى ملء جميع الحقول");
+      if(newP.length < 6) return showMsg('pass-msg', "كلمة المرور الجديدة يجب أن تكون 6 أحرف على الأقل");
+
+      try {
+        await apiCall("/api/user/change-password", "POST", { username: currentUser, oldPassword: oldP, newPassword: newP });
+        showMsg('pass-msg', "✅ تم تغيير كلمة المرور بنجاح!", false);
+        document.getElementById("old-pass").value = "";
+        document.getElementById("new-pass").value = "";
+      } catch(e) { showMsg('pass-msg', e.message); }
     }
 
     async function loadMyRequests() {
