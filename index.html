@@ -164,7 +164,6 @@
           <li onclick="switchPage('page-wallet', this)"><i class="fa-solid fa-wallet"></i> شحن الرصيد</li>
           <li onclick="switchPage('page-redeem', this)"><i class="fa-solid fa-ticket"></i> القسائم (الكوبونات)</li>
           <li onclick="switchPage('page-requests', this); loadMyRequests();"><i class="fa-solid fa-list-check"></i> طلباتي</li>
-          <!-- 🌟 زرار حسابي الجديد -->
           <li onclick="switchPage('page-account', this)"><i class="fa-solid fa-user-shield"></i> حسابي</li>
           <li onclick="logout()" style="color: #ff6b6b;"><i class="fa-solid fa-right-from-bracket"></i> تسجيل الخروج</li>
         </ul>
@@ -265,7 +264,6 @@
           <div class="card"><h2><span><i class="fa-solid fa-clock-rotate-left"></i> طلباتي</span></h2><div id="my-requests-list">لا توجد.</div></div>
         </div>
 
-        <!-- 🌟 صفحة حسابي الجديدة -->
         <div id="page-account" class="page">
           <div class="card">
             <h2><span><i class="fa-solid fa-key"></i> تغيير كلمة المرور</span></h2>
@@ -412,14 +410,14 @@
       const el = document.getElementById("groups-list"); 
       el.innerHTML = "<i class='fa-solid fa-spinner fa-spin'></i> جاري التحميل...";
       try {
-        const groups = await apiCall("/api/client/my-groups");
+        // 🌟 التعديل الأول
+        const groups = await apiCall("/api/client/my-groups?username=" + currentUser);
         if(!groups || groups.length === 0) { el.innerHTML = "لا توجد مجموعات."; return; }
         let html = "";
         for(let g of groups) {
           let statusClass = g.status.toLowerCase().includes("run") ? "status-running" : "status-stopped";
           let statusText = g.status.toLowerCase().includes("run") ? "شغالة" : "متوقفة";
           
-          // التعديل هنا: بنحاول نجيب الاسم من كل الأماكن المحتملة
           let clanName = g.clan_id;
           let glory = "0", gamesPlayed = "0";
 
@@ -477,7 +475,8 @@
     async function groupAction(groupId, action) {
       if(action === 'delete' && !confirm("هل أنت متأكد من حذف هذه المجموعة نهائياً؟")) return;
       try {
-        await apiCall("/api/client/group-action", "POST", { action: action, group_id: groupId });
+        // 🌟 التعديل الثاني
+        await apiCall("/api/client/group-action", "POST", { action: action, group_id: groupId, username: currentUser });
         alert(`✅ تم تنفيذ الأمر (${action}) بنجاح`);
         loadGroups(); 
       } catch(e) { alert("❌ حدث خطأ: " + e.message); }
@@ -539,7 +538,6 @@
       } catch (e) { showMsg('redeem-msg', e.message); }
     }
 
-    // 🌟 دالة تغيير كلمة المرور الجديدة
     async function changePassword() {
       const oldP = document.getElementById("old-pass").value;
       const newP = document.getElementById("new-pass").value;
