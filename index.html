@@ -421,12 +421,10 @@
           let glory = "0", gamesPlayed = "0";
 
           try {
-              // هنا التعديل (ضفنا username)
               const info = await apiCall("/api/client/group-action", "POST", { action: "get-clan-info", group_id: g.group_id, username: currentUser });
               if(info) {
                   clanName = info.clan_name || info.name || info.clanName || info.data?.clan_name || info.data?.name || info.clan?.name || g.clan_id;
               }
-              // هنا التعديل (ضفنا username)
               const gl = await apiCall("/api/client/group-action", "POST", { action: "get-glory", group_id: g.group_id, username: currentUser });
               if(gl) {
                   glory = gl.glory || gl.total_glory || "0";
@@ -583,7 +581,9 @@
       if(msg) {
         alert("📢 إشعار:\n" + msg);
         document.getElementById("notif-badge").style.display = 'none';
-        document.getElementById("lastNotif", Date.now()); localStorage.removeItem("latestNotifMsg");
+        // 🌟 هنا التعديل (كان فيه غلطة مطبعية)
+        localStorage.setItem("lastNotif", Date.now()); 
+        localStorage.removeItem("latestNotifMsg");
       } else alert("لا توجد إشعارات.");
     }
 
