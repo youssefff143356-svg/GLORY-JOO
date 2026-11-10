@@ -410,7 +410,6 @@
       const el = document.getElementById("groups-list"); 
       el.innerHTML = "<i class='fa-solid fa-spinner fa-spin'></i> جاري التحميل...";
       try {
-        // 🌟 التعديل الأول
         const groups = await apiCall("/api/client/my-groups?username=" + currentUser);
         if(!groups || groups.length === 0) { el.innerHTML = "لا توجد مجموعات."; return; }
         let html = "";
@@ -422,11 +421,13 @@
           let glory = "0", gamesPlayed = "0";
 
           try {
-              const info = await apiCall("/api/client/group-action", "POST", { action: "get-clan-info", group_id: g.group_id });
+              // هنا التعديل (ضفنا username)
+              const info = await apiCall("/api/client/group-action", "POST", { action: "get-clan-info", group_id: g.group_id, username: currentUser });
               if(info) {
                   clanName = info.clan_name || info.name || info.clanName || info.data?.clan_name || info.data?.name || info.clan?.name || g.clan_id;
               }
-              const gl = await apiCall("/api/client/group-action", "POST", { action: "get-glory", group_id: g.group_id });
+              // هنا التعديل (ضفنا username)
+              const gl = await apiCall("/api/client/group-action", "POST", { action: "get-glory", group_id: g.group_id, username: currentUser });
               if(gl) {
                   glory = gl.glory || gl.total_glory || "0";
                   gamesPlayed = gl.games || gl.matches || "0"; 
@@ -475,7 +476,6 @@
     async function groupAction(groupId, action) {
       if(action === 'delete' && !confirm("هل أنت متأكد من حذف هذه المجموعة نهائياً؟")) return;
       try {
-        // 🌟 التعديل الثاني
         await apiCall("/api/client/group-action", "POST", { action: action, group_id: groupId, username: currentUser });
         alert(`✅ تم تنفيذ الأمر (${action}) بنجاح`);
         loadGroups(); 
@@ -583,7 +583,7 @@
       if(msg) {
         alert("📢 إشعار:\n" + msg);
         document.getElementById("notif-badge").style.display = 'none';
-        localStorage.setItem("lastNotif", Date.now()); localStorage.removeItem("latestNotifMsg");
+        document.getElementById("lastNotif", Date.now()); localStorage.removeItem("latestNotifMsg");
       } else alert("لا توجد إشعارات.");
     }
 
