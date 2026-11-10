@@ -374,18 +374,9 @@
       document.getElementById('ui-avatar').innerText = username.charAt(0).toUpperCase();
       document.getElementById('ui-balance').innerText = balance;
       loadGroups(); checkNotifications();
-
-      // 🌟 تشغيل الفحص التلقائي للإشعارات كل 15 ثانية
-      if(!window.notifInterval) {
-          window.notifInterval = setInterval(checkNotifications, 15000);
-      }
     }
 
-    function logout() { 
-      localStorage.removeItem("ff_user"); 
-      if(window.notifInterval) clearInterval(window.notifInterval);
-      location.reload(); 
-    }
+    function logout() { localStorage.removeItem("ff_user"); location.reload(); }
 
     function switchPage(pageId, el) {
       document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
@@ -590,31 +581,33 @@
       } catch(e) { list.innerHTML = "خطأ"; }
     }
 
+    // 🌟 إصلاح دالة الإشعارات عشان تشتغل مع الريفريش 100%
     async function checkNotifications() {
       try {
         const data = await apiCall("/api/notifications");
         if(data && data.msg) {
-          let lastRead = localStorage.getItem("lastNotif") || 0;
+          let lastRead = parseInt(localStorage.getItem("lastNotif") || "0");
+          // لو تاريخ الرسالة أحدث من تاريخ آخر قراءة
           if(data.date > lastRead) {
              document.getElementById("notif-badge").style.display = 'flex';
              localStorage.setItem("latestNotifMsg", data.msg);
-             localStorage.setItem("latestNotifDate", data.date); // حفظ التاريخ اللي جاي من السيرفر
+             localStorage.setItem("latestNotifDate", data.date);
           }
         }
-      } catch(e) {}
+      } catch(e) { console.log("خطأ في جلب الإشعارات:", e); }
     }
 
     function showNotification() {
       let msg = localStorage.getItem("latestNotifMsg");
       if(msg) {
-        alert("📢 إشعار:\n" + msg);
+        alert("📢 إشعار من الإدارة:\n\n" + msg);
         document.getElementById("notif-badge").style.display = 'none';
-        // بنخلي lastNotif = التاريخ اللي جاي من السيرفر مش من جهاز العميل
-        let notifDate = localStorage.getItem("latestNotifDate") || Date.now();
-        localStorage.setItem("lastNotif", notifDate); 
-        localStorage.removeItem("latestNotifMsg");
-        localStorage.removeItem("latestNotifDate");
-      } else alert("لا توجد إشعارات.");
+        // بنسجل التاريخ اللي جاي من السيرفر عشان نعرف إننا قريناها
+        let notifDate = localStorage.getItem("latestNotifDate");
+        if(notifDate) localStorage.setItem("lastNotif", notifDate);
+      } else {
+        alert("لا توجد إشعارات جديدة.");
+      }
     }
 
     if(currentUser) {
