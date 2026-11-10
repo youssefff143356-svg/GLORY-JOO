@@ -58,7 +58,7 @@
     <div id="dashboard">
       <div class="top-bar">
         <h2><i class="fa-solid fa-shield-halved"></i> لوحة تحكم الإدارة</h2>
-        <button class="btn-sm btn-red" onclick="window.location.reload()"><i class="fa-solid fa-right-from-bracket"></i> خروج</button>
+        <button class="btn-sm btn-red" onclick="logoutAdmin()"><i class="fa-solid fa-right-from-bracket"></i> خروج</button>
       </div>
 
       <div class="kpi-grid">
@@ -106,8 +106,15 @@
 
   <script>
     const WORKER_URL = "https://ffglory-proxy.youssefff143356.workers.dev"; 
-    let currentAdminPass = "";
+    let currentAdminPass = sessionStorage.getItem("adminPass") || "";
     let allUsers = []; 
+
+    // تشغيل تلقائي لو الباسورد متخزن
+    if(currentAdminPass === "010300") {
+        document.getElementById("loginBox").style.display = "none";
+        document.getElementById("dashboard").style.display = "block";
+        setTimeout(loadAdminData, 100); // استنى ثانية عشان الصفحة تحمل
+    }
 
     async function apiCall(path, method = "GET", body = null) {
       const options = { method, headers: { "Content-Type": "application/json" } };
@@ -119,12 +126,19 @@
     }
 
     function verifyAdmin() {
-      currentAdminPass = document.getElementById("admin-pass").value;
-      if(currentAdminPass === "010300") {
+      let pass = document.getElementById("admin-pass").value;
+      if(pass === "010300") {
+        currentAdminPass = pass;
+        sessionStorage.setItem("adminPass", pass); // تخزين الباسورد
         document.getElementById("loginBox").style.display = "none";
         document.getElementById("dashboard").style.display = "block";
         loadAdminData();
       } else alert("باسورد غلط");
+    }
+
+    function logoutAdmin() {
+      sessionStorage.removeItem("adminPass");
+      window.location.reload();
     }
 
     async function loadAdminData() {
@@ -248,12 +262,11 @@
 
     async function sendBroadcast() {
       const msg = document.getElementById("broadcast-msg").value;
-      if(!msg) return;
-      if(!currentAdminPass) return alert("يرجى تسجيل الدخول كأدمن أولاً");
+      if(!msg) return alert("أدخل الرسالة أولاً");
       
       try {
         await apiCall("/api/admin/broadcast", "POST", { adminPass: currentAdminPass, message: msg });
-        alert("✅ تم إرسال الإشعار للجميع!");
+        alert("✅ تم إرسال الإشعار للجميع! اعمل ريفريش لأي صفحة مفتوحة عند العملاء وهيظهر.");
         document.getElementById("broadcast-msg").value = "";
       } catch(e) { alert("❌ حدث خطأ: " + e.message); }
     }
