@@ -174,7 +174,12 @@
         
         <div id="page-dashboard" class="page active">
           <div class="card">
-            <h2><span><i class="fa-solid fa-rocket"></i> إطلاق مجموعة (2 رصيد)</span></h2>
+            
+            <!-- 🌟 العنوان مع زرار طريقة إنشاء البوتات -->
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h2 style="margin-bottom: 0;"><span><i class="fa-solid fa-rocket"></i> إطلاق مجموعة (2 رصيد)</span></h2>
+                <button class="btn-sm btn-blue" onclick="openGuideModal()" style="padding: 10px 15px; font-size: 0.9rem;"><i class="fa-solid fa-circle-info"></i> طريقة إنشاء البوتات</button>
+            </div>
             
             <div class="input-group">
                 <select id="region">
@@ -196,6 +201,16 @@
             <div class="input-group"><input type="text" id="clanId" placeholder="Clan ID"></div>
             
             <button class="btn-primary" id="btn-launch" onclick="launchGroup()">إطلاق <i class="fa-solid fa-bolt"></i></button>
+            
+            <!-- مربع جاري الإطلاق -->
+            <div id="launch-progress" style="display: none; margin-top: 20px; text-align: center; background: #0a0505; padding: 20px; border-radius: 15px; border: 1px solid #331111;">
+                <h3 style="color: #fbbf24; margin-bottom: 15px; font-size: 1.1rem;"><i class="fa-solid fa-spinner fa-spin"></i> جاري الإطلاق...</h3>
+                <div id="launch-step-text" style="font-size: 1rem; font-weight: bold; color: white; margin-bottom: 15px;">جاري الاتصال بالسيرفر...</div>
+                <div style="width: 100%; height: 8px; background: #331111; border-radius: 4px; overflow: hidden;">
+                    <div id="launch-progress-bar" style="width: 0%; height: 100%; background: #e50914; transition: width 0.4s ease;"></div>
+                </div>
+            </div>
+
             <div id="launch-msg" class="msg"></div>
           </div>
 
@@ -244,7 +259,6 @@
           </div>
         </div>
 
-        <!-- 🌟 صفحة القسائم (تم إزالة الشراء) -->
         <div id="page-redeem" class="page">
           <div class="card">
             <h2><span><i class="fa-solid fa-gift"></i> استبدال كوبون</span></h2>
@@ -278,7 +292,32 @@
     </div>
   </div>
 
-  <!-- 🌟 نافذة الإشعارات (من غير زرار إغلاق) -->
+  <!-- 🌟 نافذة طريقة إنشاء البوتات -->
+  <div id="guide-modal" class="modal-overlay">
+    <div class="modal-content" style="text-align: right; max-width: 500px;">
+      <h3 style="color: #38bdf8; margin-bottom: 20px; text-align: center;"><i class="fa-solid fa-book-open"></i> طريقة إنشاء البوتات</h3>
+      
+      <div style="background: #0a0505; padding: 20px; border-radius: 10px; border: 1px solid var(--border-color); line-height: 1.8; font-size: 0.95rem;">
+        <p style="margin-bottom: 12px; color: white;"><span style="color: #e50914; font-weight: bold; font-size: 1.1rem;">1.</span> ادخل على إعدادات الكلان: <br> اختر "الموافقة التلقائية" واجعلها <span style="color: #22c55e; font-weight: bold;">إيقاف</span>.</p>
+        
+        <p style="margin-bottom: 12px; color: white;"><span style="color: #e50914; font-weight: bold; font-size: 1.1rem;">2.</span> ادخل على المستوى (Level): <br> اختر <span style="color: #fbbf24; font-weight: bold;">"الإعدادات الافتراضية"</span>.</p>
+        
+        <p style="margin-bottom: 12px; color: white;"><span style="color: #e50914; font-weight: bold; font-size: 1.1rem;">3.</span> ادخل على باتل رويال / مصنف: <br> اختر <span style="color: #fbbf24; font-weight: bold;">"الإعدادات الافتراضية"</span>.</p>
+        
+        <p style="margin-bottom: 12px; color: white;"><span style="color: #e50914; font-weight: bold; font-size: 1.1rem;">4.</span> ادخل على كلاش سكواد / مصنف: <br> اختر <span style="color: #fbbf24; font-weight: bold;">"الإعدادات الافتراضية"</span>.</p>
+        
+        <hr style="border-color: #331111; margin: 15px 0;">
+        
+        <p style="margin-bottom: 5px; color: #38bdf8; font-weight: bold;"><span style="color: #e50914; font-size: 1.1rem;">5.</span> أخيراً: اشحن حسابك (تحتاج 2 رصيد على الأقل)، ثم اختر السيرفر التابع في الموقع واضغط "إطلاق".</p>
+      </div>
+      
+      <div class="modal-actions" style="margin-top: 20px;">
+        <button class="btn-primary" onclick="closeGuideModal()" style="width: 100%; background: #3b82f6;">فهمت، إغلاق</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- نافذة الإشعارات -->
   <div id="notif-modal" class="modal-overlay">
     <div class="modal-content">
       <h3 style="color: #fbbf24;"><i class="fa-solid fa-bullhorn"></i> إشعار من الإدارة</h3>
@@ -317,7 +356,7 @@
       const el = document.getElementById(id);
       el.innerText = text;
       el.className = `msg ${isError ? 'error' : 'success'}`;
-      setTimeout(() => { el.className = "msg"; }, 5000);
+      setTimeout(() => { el.className = "msg"; }, 8000);
     }
 
     function calcUptimePercent(uptimeStr) {
@@ -374,25 +413,76 @@
       if(el) el.classList.add('active');
     }
 
+    // 🌟 دوال نافذة طريقة إنشاء البوتات
+    function openGuideModal() {
+        document.getElementById('guide-modal').style.display = 'flex';
+    }
+
+    function closeGuideModal() {
+        document.getElementById('guide-modal').style.display = 'none';
+    }
+
     async function launchGroup() {
       const btn = document.getElementById("btn-launch");
       const region = document.getElementById("region").value;
       const clanId = document.getElementById("clanId").value;
       
+      const progressDiv = document.getElementById("launch-progress");
+      const stepText = document.getElementById("launch-step-text");
+      const progressBar = document.getElementById("launch-progress-bar");
+      const launchMsg = document.getElementById("launch-msg");
+
       if(!clanId) return showMsg('launch-msg', "أدخل Clan ID");
 
       btn.disabled = true;
-      btn.innerHTML = "<i class='fa-solid fa-spinner fa-spin'></i> جاري الإطلاق...";
-      document.getElementById('launch-msg').className = "msg";
+      btn.innerHTML = "جاري الإطلاق...";
+      launchMsg.className = "msg";
+      progressDiv.style.display = "block";
+      progressBar.style.width = "0%";
+      progressBar.style.background = "#e50914";
+      stepText.innerText = "جاري تهيئة الاتصال...";
+
+      let currentStep = 1;
+      const interval = setInterval(() => {
+        if(currentStep <= 4) {
+            stepText.innerText = `جاري إنشاء الحساب ${currentStep}...`;
+            progressBar.style.width = `${currentStep * 20}%`;
+            currentStep++;
+        } else {
+            stepText.innerText = "جاري تشغيل وربط المجموعة...";
+            progressBar.style.width = "95%";
+        }
+      }, 2500);
 
       try {
         const data = await apiCall("/api/client/auto-clan-group", "POST", { username: currentUser, region, clan_id: clanId });
-        showMsg('launch-msg', "✅ تم الإطلاق! وتم خصم 2 رصيد.", false);
+        
+        clearInterval(interval);
+        stepText.innerText = "تم الإطلاق بنجاح!";
+        progressBar.style.width = "100%";
+        progressBar.style.background = "#22c55e";
+        
         document.getElementById("ui-balance").innerText = data.new_balance;
         document.getElementById("clanId").value = "";
-        loadGroups(); 
+        
+        setTimeout(async () => {
+            progressDiv.style.display = "none";
+            await loadGroups(); 
+        }, 1500);
+
       } catch (e) { 
-        showMsg('launch-msg', e.message); 
+        clearInterval(interval);
+        progressDiv.style.display = "none";
+        showMsg('launch-msg', "⚠️ " + e.message, true); 
+        
+        setTimeout(async () => {
+            await loadGroups();
+            try {
+                const bal = await apiCall(`/api/user/balance?username=${currentUser}`);
+                document.getElementById("ui-balance").innerText = bal.balance;
+            } catch(err) {}
+        }, 3000);
+
       } finally {
         btn.disabled = false;
         btn.innerHTML = "إطلاق <i class='fa-solid fa-bolt'></i>";
@@ -404,28 +494,40 @@
       el.innerHTML = "<i class='fa-solid fa-spinner fa-spin'></i> جاري التحميل...";
       try {
         const groups = await apiCall("/api/client/my-groups?username=" + currentUser);
-        if(!groups || groups.length === 0) { el.innerHTML = "لا توجد مجموعات."; return; }
+        
+        if(!groups || !Array.isArray(groups) || groups.length === 0) { 
+            el.innerHTML = "لا توجد مجموعات."; 
+            return; 
+        }
+        
         let html = "";
         for(let g of groups) {
-          let statusClass = g.status.toLowerCase().includes("run") ? "status-running" : "status-stopped";
-          let statusText = g.status.toLowerCase().includes("run") ? "شغالة" : "متوقفة";
+          let statusStr = g.status ? String(g.status).toLowerCase() : "";
+          let statusClass = statusStr.includes("run") ? "status-running" : "status-stopped";
+          let statusText = statusStr.includes("run") ? "شغالة" : "متوقفة";
           
-          let clanName = g.clan_id;
+          let groupId = g.group_id || "غير معروف";
+          let clanId = g.clan_id || "غير معروف";
+          let region = g.region || "غير معروف";
+          let uptime = g.uptime || "-";
+          let botCount = g.running_count || g.bot_count || 4;
+          
+          let clanName = clanId;
           let glory = "0", gamesPlayed = "0";
 
           try {
-              const info = await apiCall("/api/client/group-action", "POST", { action: "get-clan-info", group_id: g.group_id, username: currentUser });
+              const info = await apiCall("/api/client/group-action", "POST", { action: "get-clan-info", group_id: groupId, username: currentUser });
               if(info) {
-                  clanName = info.clan_name || info.name || info.clanName || info.data?.clan_name || info.data?.name || info.clan?.name || g.clan_id;
+                  clanName = info.clan_name || info.name || info.clanName || info.data?.clan_name || info.data?.name || info.clan?.name || clanId;
               }
-              const gl = await apiCall("/api/client/group-action", "POST", { action: "get-glory", group_id: g.group_id, username: currentUser });
+              const gl = await apiCall("/api/client/group-action", "POST", { action: "get-glory", group_id: groupId, username: currentUser });
               if(gl) {
                   glory = gl.glory || gl.total_glory || "0";
                   gamesPlayed = gl.games || gl.matches || "0"; 
               }
           } catch(e) {}
 
-          let percent = calcUptimePercent(g.uptime);
+          let percent = calcUptimePercent(uptime);
 
           html += `
             <div class="group-card">
@@ -434,7 +536,7 @@
                   <i class="fa-solid fa-shield-halved clan-logo"></i>
                   <div>
                     <h3>${clanName}</h3>
-                    <p>ID: ${g.clan_id} | المنطقة: ${g.region}</p>
+                    <p>ID: ${clanId} | المنطقة: ${region}</p>
                   </div>
                 </div>
                 <span class="group-status ${statusClass}">${statusText}</span>
@@ -442,26 +544,29 @@
               <div class="group-stats">
                 <div class="stat-item"><span class="stat-label">Glory</span><span class="stat-value glory-val">${glory}</span></div>
                 <div class="stat-item"><span class="stat-label">المباريات</span><span class="stat-value">${gamesPlayed}</span></div>
-                <div class="stat-item"><span class="stat-label">وقت التشغيل</span><span class="stat-value">${g.uptime || '-'}</span></div>
-                <div class="stat-item"><span class="stat-label">البوتات</span><span class="stat-value">${g.running_count || g.bot_count || 4}</span></div>
+                <div class="stat-item"><span class="stat-label">وقت التشغيل</span><span class="stat-value">${uptime}</span></div>
+                <div class="stat-item"><span class="stat-label">البوتات</span><span class="stat-value">${botCount}</span></div>
               </div>
               <div class="progress-container">
                 <div class="progress-bar" style="width: ${percent}%;"></div>
                 <div class="progress-text"><span>8h GOAL</span><span>${percent}%</span></div>
               </div>
               <div class="group-actions">
-                <button class="btn-sm btn-green" onclick="groupAction('${g.group_id}', 'restart')"><i class="fa-solid fa-rotate"></i> إعادة تشغيل</button>
-                <button class="btn-sm btn-yellow" onclick="groupAction('${g.group_id}', 'stop')"><i class="fa-solid fa-stop"></i> إيقاف</button>
-                <button class="btn-sm btn-red" onclick="groupAction('${g.group_id}', 'delete')"><i class="fa-solid fa-trash"></i> حذف</button>
-                <button class="btn-sm btn-blue" onclick="groupAction('${g.group_id}', 'get-squad-info')"><i class="fa-solid fa-users"></i> الفريق</button>
-                <button class="btn-sm btn-gray" onclick="groupAction('${g.group_id}', 'refund')"><i class="fa-solid fa-rotate-left"></i> استرداد</button>
-                <button class="btn-sm btn-gray" onclick="groupAction('${g.group_id}', 'extend')"><i class="fa-solid fa-clock"></i> تابع +8 ساعات</button>
+                <button class="btn-sm btn-green" onclick="groupAction('${groupId}', 'restart')"><i class="fa-solid fa-rotate"></i> إعادة تشغيل</button>
+                <button class="btn-sm btn-yellow" onclick="groupAction('${groupId}', 'stop')"><i class="fa-solid fa-stop"></i> إيقاف</button>
+                <button class="btn-sm btn-red" onclick="groupAction('${groupId}', 'delete')"><i class="fa-solid fa-trash"></i> حذف</button>
+                <button class="btn-sm btn-blue" onclick="groupAction('${groupId}', 'get-squad-info')"><i class="fa-solid fa-users"></i> الفريق</button>
+                <button class="btn-sm btn-gray" onclick="groupAction('${groupId}', 'refund')"><i class="fa-solid fa-rotate-left"></i> استرداد</button>
+                <button class="btn-sm btn-gray" onclick="groupAction('${groupId}', 'extend')"><i class="fa-solid fa-clock"></i> تابع +8 ساعات</button>
               </div>
             </div>
           `;
         }
         el.innerHTML = html;
-      } catch(e) { el.innerHTML = "خطأ في التحميل."; }
+      } catch(e) { 
+          console.error(e);
+          el.innerHTML = "خطأ في التحميل."; 
+      }
     }
 
     async function groupAction(groupId, action) {
