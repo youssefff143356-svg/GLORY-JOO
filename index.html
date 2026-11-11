@@ -108,12 +108,10 @@
     @keyframes scaleIn { from { transform: scale(0.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }
     .modal-content h3 { color: #22c55e; margin-bottom: 15px; font-size: 1.5rem; }
     .modal-content p { color: var(--text-muted); margin-bottom: 20px; }
-    .coupon-code-box { background: #0a0505; border: 2px dashed #fbbf24; padding: 15px; border-radius: 10px; font-size: 1.8rem; font-weight: bold; color: #fbbf24; letter-spacing: 2px; margin-bottom: 20px; font-family: monospace; }
-    .modal-actions { display: flex; gap: 10px; }
-    .modal-actions button { flex: 1; padding: 12px; font-size: 1rem; border-radius: 10px; border: none; cursor: pointer; font-weight: bold; font-family: 'Cairo'; transition: 0.3s;}
-
     .notif-msg-box { background: #0a0505; border: 1px solid var(--border-color); padding: 20px; border-radius: 10px; font-size: 1.1rem; color: white; margin-bottom: 20px; text-align: right; line-height: 1.6; }
     .btn-mark-read { background: #3b82f6; color: white; }
+    .modal-actions { display: flex; gap: 10px; }
+    .modal-actions button { flex: 1; padding: 12px; font-size: 1rem; border-radius: 10px; border: none; cursor: pointer; font-weight: bold; font-family: 'Cairo'; transition: 0.3s;}
 
     @media (max-width: 768px) {
       .main-container { flex-direction: column; }
@@ -246,19 +244,8 @@
           </div>
         </div>
 
+        <!-- 🌟 صفحة القسائم (تم إزالة الشراء) -->
         <div id="page-redeem" class="page">
-          <div class="card">
-            <h2><span><i class="fa-solid fa-cart-shopping"></i> شراء قسيمة (خصم مضاعف)</span></h2>
-            <p style="font-size:0.9rem; color:#9ca3af; margin-bottom:15px;">شراء قسيمة بقيمة 1 رصيد تخصم منك 2 رصيد. (القسيمة بقيمة 2 تخصم 4).</p>
-            <div class="input-group">
-              <select id="buy-coupon-value">
-                <option value="1">قسيمة 1 رصيد (تكلفة: 2)</option>
-                <option value="2">قسيمة 2 رصيد (تكلفة: 4)</option>
-              </select>
-            </div>
-            <button class="btn-primary" onclick="buyCoupon()">شراء القسيمة</button>
-            <div id="buy-coupon-msg" class="msg"></div>
-          </div>
           <div class="card">
             <h2><span><i class="fa-solid fa-gift"></i> استبدال كوبون</span></h2>
             <div class="input-group"><input type="text" id="coupon-code" placeholder="XXXX-XXXX-XXXX"></div>
@@ -287,19 +274,6 @@
           </div>
         </div>
 
-      </div>
-    </div>
-  </div>
-
-  <!-- نافذة الكوبون -->
-  <div id="coupon-modal" class="modal-overlay">
-    <div class="modal-content">
-      <h3><i class="fa-solid fa-check-circle"></i> تم إنشاء القسيمة!</h3>
-      <p>قم بنسخ الكود والاحتفاظ به:</p>
-      <div class="coupon-code-box" id="generated-coupon-code">XXXX-XXXX-XXXX</div>
-      <div class="modal-actions">
-        <button class="btn-green" onclick="copyCoupon()"><i class="fa-solid fa-copy"></i> نسخ الكود</button>
-        <button class="btn-red" onclick="closeCouponModal()"><i class="fa-solid fa-xmark"></i> إغلاق</button>
       </div>
     </div>
   </div>
@@ -534,30 +508,6 @@
       } catch (e) { showMsg('topup-msg', e.message); }
     }
 
-    async function buyCoupon() {
-      const basic_credits = document.getElementById("buy-coupon-value").value;
-      try {
-        const data = await apiCall("/api/user/create-coupon", "POST", { username: currentUser, basic_credits: parseInt(basic_credits) });
-        document.getElementById("ui-balance").innerText = data.new_balance;
-        document.getElementById("generated-coupon-code").innerText = data.code;
-        document.getElementById("coupon-modal").style.display = "flex";
-      } catch (e) { showMsg('buy-coupon-msg', e.message); }
-    }
-
-    function copyCoupon() {
-      const code = document.getElementById("generated-coupon-code").innerText;
-      navigator.clipboard.writeText(code).then(() => {
-        alert("✅ تم نسخ الكود بنجاح!");
-      }).catch(() => {
-        alert("❌ فشل النسخ، يرجى النسخ يدوياً.");
-      });
-    }
-
-    function closeCouponModal() {
-      document.getElementById("coupon-modal").style.display = "none";
-      document.getElementById("buy-coupon-msg").className = "msg";
-    }
-
     async function redeemCoupon() {
       const code = document.getElementById("coupon-code").value.trim();
       if(!code) return showMsg('redeem-msg', "أدخل الكود");
@@ -596,14 +546,11 @@
       } catch(e) { list.innerHTML = "خطأ"; }
     }
 
-    // 🌟 دالة جلب الإشعارات (بتقارن رقم برقم)
     async function checkNotifications() {
       try {
         const data = await apiCall("/api/notifications");
         if(data && data.msg) {
-          // بنجيب رقم آخر رسالة اتقرأت
           let lastReadDate = parseInt(localStorage.getItem("lastReadNotifDate") || "0");
-          // بنحول تاريخ الرسالة الجديدة لرقم
           let notifDate = parseInt(data.date);
           
           if(notifDate > lastReadDate) {
@@ -632,7 +579,6 @@
       }
     }
 
-    // 🌟 دالة التمييز كمقروء
     function markNotifAsRead() {
         let date = localStorage.getItem("currentNotifDate");
         if(date) {
